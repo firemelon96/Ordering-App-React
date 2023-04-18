@@ -10,6 +10,8 @@ const Cart = (props) => {
   const totalAmount = `$${cartCtx.totalAmount.toFixed(2)}`;
   const hasItem = cartCtx.items.length > 0;
   const [checkout, setCheckout] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const addCartItemHandler = (item) => {
     cartCtx.addItem(item);
@@ -20,6 +22,21 @@ const Cart = (props) => {
 
   const checkoutHandler = () => {
     setCheckout(true);
+  };
+
+  const submitOrderHandler = async (userData) => {
+    await fetch(
+      "https://react-http-7e647-default-rtdb.firebaseio.com/orders.json",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          user: userData,
+          orderedItems: cartCtx.items,
+        }),
+      }
+    );
+    setIsSubmitting(false);
+    setIsSubmitted(true);
   };
 
   const cartItems = (
@@ -49,15 +66,39 @@ const Cart = (props) => {
       )}
     </div>
   );
-  return (
-    <Modal onCloseCart={props.onHideCart}>
+
+  const cartModalContent = (
+    <React.Fragment>
       {cartItems}
       <div className={classes.total}>
         <span>Total Amount</span>
         <span>{totalAmount}</span>
       </div>
-      {checkout && <Checkout onClose={props.onHideCart} />}
+      {checkout && (
+        <Checkout onConfirm={submitOrderHandler} onClose={props.onHideCart} />
+      )}
       {!checkout && formActions}
+    </React.Fragment>
+  );
+
+  const isSubmittingModalContent = <p>Sending order datra...</p>;
+
+  const didSubmitModalContent = (
+    <React.Fragment>
+      <p>Successfully sent the order</p>
+      <div className={classes.actions}>
+        <button className={classes.button} onClick={props.onHideCart}>
+          Close
+        </button>
+      </div>
+    </React.Fragment>
+  );
+
+  return (
+    <Modal onCloseCart={props.onHideCart}>
+      {!isSubmitting && !isSubmitted && cartModalContent}
+      {isSubmitting && isSubmittingModalContent}
+      {isSubmitted && didSubmitModalContent}
     </Modal>
   );
 };
